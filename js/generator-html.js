@@ -1,5 +1,7 @@
 /**
  * HTMLBuilder
+ * אחראי אך ורק על בניית המחרוזת של קובץ ה-HTML עבור התלמיד.
+ * מכיל את כל ה-CSS, ה-JS והמבנה של המבחן הפתור.
  */
 const HTMLBuilder = {
     build: function(studentName, questions, instructions, examTitle, logoData, solutionDataUrl, duration, unlockCodeHash, parts, teacherEmail, driveLink, projectData) {
@@ -114,10 +116,11 @@ const HTMLBuilder = {
         .sound-btn.playing { background: #e74c3c; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
-        #highlighterTool { position: fixed; top: 150px; right: 20px; width: 50px; background: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.2); border-radius: 30px; padding: 15px 0; display: flex; flex-direction: column; align-items: center; gap: 12px; z-index: 10000; border: 1px solid #ddd; transition: opacity 0.3s; }
+        #highlighterTool { position: fixed; top: 150px; right: 20px; width: 60px; background: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.2); border-radius: 30px; padding: 15px 0; display: flex; flex-direction: column; align-items: center; gap: 12px; z-index: 10000; border: 1px solid #ddd; transition: opacity 0.3s; }
         .color-btn { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s; }
         .color-btn:hover { transform: scale(1.2); }
         .color-btn.active { border-color: #333; transform: scale(1.1); box-shadow: 0 0 0 2px #333; }
+        .eraser-btn { background: #f0f0f0; border: 1px solid #ccc; display: flex; justify-content: center; align-items: center; font-size: 16px; }
         .drag-handle { cursor: move; color: #ccc; font-size: 20px; line-height: 10px; margin-bottom: 5px; user-select: none; }
         
         #startScreen,#timesUpModal,#securityModal,#successModal{position:fixed;top:0;left:0;width:100%;height:100%;background:#2c3e50;color:white;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:9999;}#timesUpModal,#securityModal,#successModal{display:none;}
@@ -125,7 +128,15 @@ const HTMLBuilder = {
         #securityModal h2, #timesUpModal h2 { font-size: 3rem; margin-bottom: 10px; color: #e74c3c; }
         </style></head><body>
         ${embeddedProjectData}
-        <div id="highlighterTool"><div class="drag-handle" id="hlDragHandle">:::</div><div class="color-btn" style="background:#ffeb3b;" onclick="setMarker('#ffeb3b', this)" title="צהוב"></div><div class="color-btn" style="background:#a6ff00;" onclick="setMarker('#a6ff00', this)" title="ירוק"></div><div class="color-btn" style="background:#ff4081;" onclick="setMarker('#ff4081', this)" title="ורוד"></div><div class="color-btn" style="background:#00e5ff;" onclick="setMarker('#00e5ff', this)" title="תכלת"></div><div class="color-btn" style="background:#fff; border:1px solid #ccc; display:flex; justify-content:center; align-items:center; font-size:12px;" onclick="setMarker(null, this)" title="בטל מרקר">❌</div></div>
+        <div id="highlighterTool">
+            <div class="drag-handle" id="hlDragHandle">:::</div>
+            <div class="color-btn" style="background:#ffeb3b;" onclick="setMarker('#ffeb3b', this)" title="צהוב"></div>
+            <div class="color-btn" style="background:#a6ff00;" onclick="setMarker('#a6ff00', this)" title="ירוק"></div>
+            <div class="color-btn" style="background:#ff4081;" onclick="setMarker('#ff4081', this)" title="ורוד"></div>
+            <div class="color-btn" style="background:#00e5ff;" onclick="setMarker('#00e5ff', this)" title="תכלת"></div>
+            <div class="color-btn eraser-btn" onclick="setMarker('remove', this)" title="מחק סימון">🧹</div>
+            <div class="color-btn" style="background:#fff; border:1px solid #ccc; display:flex; justify-content:center; align-items:center; font-size:12px;" onclick="setMarker(null, this)" title="בטל כלי">❌</div>
+        </div>
 
         <div id="startScreen">
             <h1>${examTitle}</h1>
@@ -266,36 +277,61 @@ const HTMLBuilder = {
             const display = document.getElementById('teacherCalculatedScore');
             if(display) display.innerText = t;
         }
-        let markerColor = null;
-        function setMarker(color, btn) {
-            markerColor = color;
+        
+        let markerMode = null; // 'color' or 'remove' or null
+        let activeColor = null;
+
+        function setMarker(val, btn) {
             document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-            if(btn) btn.classList.add('active');
-            if(color) {
-                const svg = \`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><path fill="\${color}" stroke="black" stroke-width="1" d="M28.06 6.94L25.06 3.94a2.003 2.003 0 0 0-2.83 0l-16.17 16.17a2.003 2.003 0 0 0-.58 1.41V26h4.48c.53 0 1.04-.21 1.41-.59l16.17-16.17c.79-.78.79-2.05.52-2.3zM8.5 24H7v-1.5l14.5-14.5 1.5 1.5L8.5 24z"/><path fill="\${color}" d="M4 28l4-4H4z"/></svg>\`;
+            
+            if (!val) {
+                // Cancel
+                markerMode = null;
+                activeColor = null;
+                document.body.style.cursor = 'default';
+                return;
+            }
+
+            if (btn) btn.classList.add('active');
+
+            if (val === 'remove') {
+                markerMode = 'remove';
+                activeColor = 'transparent';
+                document.body.style.cursor = 'cell'; // eraser like cursor
+            } else {
+                markerMode = 'color';
+                activeColor = val;
+                const svg = \`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><path fill="\${val}" stroke="black" stroke-width="1" d="M28.06 6.94L25.06 3.94a2.003 2.003 0 0 0-2.83 0l-16.17 16.17a2.003 2.003 0 0 0-.58 1.41V26h4.48c.53 0 1.04-.21 1.41-.59l16.17-16.17c.79-.78.79-2.05.52-2.3zM8.5 24H7v-1.5l14.5-14.5 1.5 1.5L8.5 24z"/><path fill="\${val}" d="M4 28l4-4H4z"/></svg>\`;
                 const url = 'data:image/svg+xml;base64,' + btoa(svg);
                 document.body.style.cursor = \`url('\${url}') 0 32, auto\`;
-            } else {
-                document.body.style.cursor = 'default';
             }
         }
+        
         document.addEventListener('mouseup', () => {
-            if (!markerColor) return;
+            if (!markerMode) return;
             const sel = window.getSelection();
-            if (sel.rangeCount > 0 && !sel.isCollapsed) {
-                const range = sel.getRangeAt(0);
-                const common = range.commonAncestorContainer;
-                if(common.nodeType === 1 && (common.closest('#highlighterTool') || common.tagName === 'TEXTAREA' || common.tagName === 'INPUT')) return;
-                if(common.nodeType === 3 && (common.parentNode.closest('#highlighterTool') || common.parentNode.tagName === 'TEXTAREA')) return;
-                document.designMode = "on";
-                if(document.queryCommandEnabled("hiliteColor")) {
-                    document.execCommand("styleWithCSS", false, true);
-                    document.execCommand("hiliteColor", false, markerColor);
-                }
-                document.designMode = "off";
-                sel.removeAllRanges();
+            if (sel.rangeCount === 0 || sel.isCollapsed) return;
+
+            // Prevent highlighting inside toolbar or inputs
+            const common = sel.getRangeAt(0).commonAncestorContainer;
+            if(common.nodeType === 1 && (common.closest('#highlighterTool') || common.tagName === 'TEXTAREA' || common.tagName === 'INPUT')) return;
+            if(common.nodeType === 3 && (common.parentNode.closest('#highlighterTool') || common.parentNode.tagName === 'TEXTAREA')) return;
+
+            // Perform Highlight / Erase
+            document.designMode = "on";
+            if (markerMode === 'remove') {
+                // Remove highlight by setting backColor to transparent
+                document.execCommand("backColor", false, "transparent");
+            } else {
+                // Apply highlight
+                document.execCommand("hiliteColor", false, activeColor);
             }
+            document.designMode = "off";
+            
+            // Clear selection so user sees result immediately
+            sel.removeAllRanges();
         });
+
         const tool = document.getElementById('highlighterTool');
         const handle = document.getElementById('hlDragHandle');
         let isDragging = false, startX, startY, initialLeft, initialTop;
