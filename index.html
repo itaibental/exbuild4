@@ -56,6 +56,19 @@
         .welcome-card:hover .card-icon { transform: rotateY(-180deg); }
         .card-title { font-size: 1.8rem; font-weight: 700; margin-bottom: 15px; color: var(--primary); }
         .card-desc { font-size: 1rem; color: #7f8c8d; line-height: 1.6; }
+        
+        /* Footer Styles for Welcome Page */
+        .welcome-footer {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            z-index: 1;
+        }
+
         @keyframes fadeInDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 768px) { .cards-container { flex-direction: column; gap: 30px; width: 100%; align-items: center; } .welcome-card { width: 85%; height: auto; padding: 30px; } .main-title { font-size: 2.8rem; } .header-content { margin-bottom: 40px; } }
@@ -67,32 +80,29 @@
         <div class="circle circle-2"></div>
         <div class="header-content">
             <h1 class="main-title">EXAMBUILDER 4.0</h1>
-            <div class="sub-title">המערכת המתקדמת והידידותית ליצירה, ניהול והפצה של מבחנים דיגיטליים</div>
+            <div class="sub-title">המערכת המתקדמת והידידותית ליצירה, ניהול והפצה של מבחני בגרות דיגיטליים</div>
         </div>
         <div class="cards-container">
-            <!-- כרטיס יצירת מבחן - עכשיו מפעיל פונקציה עם סיסמה -->
             <div onclick="enterTeacherPanel()" class="welcome-card">
                 <div class="card-icon-wrapper"><div class="card-icon">✏️</div></div>
                 <div class="card-title">יצירת מבחן</div>
                 <div class="card-desc">כלי למורים: עורך מתקדם ליצירה, עריכה והפצה של מבחנים חדשים בקלות ובמהירות.</div>
             </div>
-            <!-- כרטיס ארכיון מבחנים -->
             <a href="archive.html" class="welcome-card">
                 <div class="card-icon-wrapper"><div class="card-icon">📚</div></div>
                 <div class="card-title">ארכיון מבחנים</div>
                 <div class="card-desc">לתלמידים ולתרגול: גישה מהירה ונוחה למאגר המבחנים לפי שנים ונושאים.</div>
             </a>
         </div>
+        
+        <footer class="welcome-footer">
+            נוצר על ידי איתי בן טל. כל הזכויות שמורות ©️
+        </footer>
     </div>
 
     <script>
-        /**
-         * פונקציה לבדיקת סיסמת מורה לפני כניסה לעורך
-         */
         function enterTeacherPanel() {
             const password = prompt("נא להזין סיסמת מורה לכניסה למערכת:");
-            
-            // הגדרת סיסמה כברירת מחדל (1234) בדומה לארכיון
             if (password === "1234") {
                 window.location.href = "editor.html";
             } else if (password !== null) {
@@ -102,4 +112,3 @@
     </script>
 </body>
 </html>
-
