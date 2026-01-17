@@ -82,7 +82,7 @@ const HTMLBuilder = {
         const logoHTML = logoData ? `<img src="${logoData}" alt="Logo" class="school-logo">` : '';
         const embeddedProjectData = projectData ? `<script type="application/json" id="exam-engine-data">${JSON.stringify(projectData).replace(/<\/script>/g, '<\\/script>')}</script>` : '';
 
-        return `<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8"><title>מבחן - ${studentName}</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap"><style>
+        return `<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8"><title>${examTitle} - ${studentName}</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap"><style>
         :root{--primary:#2c3e50;--accent:#3498db;--success:#27ae60;--danger:#e74c3c;}
         body{font-family:'Rubik',sans-serif;background:#f4f6f8;margin:0;padding:2%;color:#2c3e50;font-size:18px;line-height:1.5;} 
         .container{max-width:800px;margin:0 auto;background:white;padding:5%;border-radius:1em;box-shadow:0 1vh 3vh rgba(0,0,0,0.05);}
@@ -171,7 +171,6 @@ const HTMLBuilder = {
             const container = document.getElementById('mainContainer');
             
             if(color) {
-                // הפיכת האזור ל"עריך" כדי שפקודות הצבע יעבדו בבטחה
                 container.contentEditable = "true";
                 document.body.style.cursor = (color === 'eraser') ? "help" : "crosshair";
             } else {
@@ -180,10 +179,8 @@ const HTMLBuilder = {
             }
         }
 
-        // חסימת הקלדה במכולה בזמן שהיא contentEditable (כדי למנוע מהתלמיד למחוק שאלות)
         document.getElementById('mainContainer').addEventListener('keydown', (e) => {
             if (markerColor && !e.target.closest('textarea') && !e.target.closest('input')) {
-                // מאפשרים רק קיצורי דרך של מערכת או בחירה, חוסמים הקלדה רגילה
                 if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
                     e.preventDefault();
                 }
@@ -192,8 +189,6 @@ const HTMLBuilder = {
 
         document.addEventListener('mouseup', (e) => {
             if (!markerColor) return;
-            
-            // בדיקה אם המשתמש לוחץ בתוך אזורי טקסט - שם אסור לסמן
             if(e.target.closest('textarea') || e.target.closest('input') || e.target.closest('#highlighterTool')) return;
 
             const sel = window.getSelection();
@@ -204,12 +199,10 @@ const HTMLBuilder = {
                     document.execCommand("styleWithCSS", false, true);
                     document.execCommand("hiliteColor", false, markerColor);
                 }
-                // ניקוי הבחירה לאחר הסימון
                 sel.removeAllRanges();
             }
         });
 
-        // גרירת סרגל המרקרים
         const tool = document.getElementById('highlighterTool');
         const handle = document.getElementById('hlDragHandle');
         let isDragging = false, startX, startY, initialLeft, initialTop;
@@ -242,11 +235,19 @@ const HTMLBuilder = {
             document.getElementById('mainContainer').contentEditable = "false";
             document.querySelectorAll('input,textarea').forEach(e=>{e.setAttribute('value',e.value); if(e.tagName==='TEXTAREA')e.innerHTML=e.value;});
             const html="<!DOCTYPE html>"+document.documentElement.outerHTML;
-            const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([html],{type:'text/html'})); a.download="פתור-"+document.getElementById('studentNameField').value+".html"; a.click();
+            const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([html],{type:'text/html'})); 
+            // שינוי שם הקובץ לשם המבחן
+            a.download="${examTitle} - פתור - " + (document.getElementById('studentNameField').value || 'תלמיד') + ".html"; a.click();
             document.getElementById('successModal').style.display='flex';
         }
         function enableGradingFromModal(){if(simpleHash(prompt('קוד:'))==="${unlockCodeHash}"){document.getElementById('successModal').style.display='none';document.querySelector('.teacher-controls').style.display='block';document.querySelectorAll('.grading-area').forEach(e=>e.style.display='block');document.querySelectorAll('.grade-input,.teacher-comment').forEach(e=>e.disabled=false);}}
-        function saveGradedExam(){document.querySelectorAll('input,textarea').forEach(i=>i.setAttribute('value',i.value));const html="<!DOCTYPE html>"+document.documentElement.outerHTML;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([html],{type:'text/html'}));a.download="בדוק.html";a.click();}
+        function saveGradedExam(){
+            document.querySelectorAll('input,textarea').forEach(i=>i.setAttribute('value',i.value));
+            const html="<!DOCTYPE html>"+document.documentElement.outerHTML;
+            const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([html],{type:'text/html'}));
+            // שינוי שם הקובץ בבדיקה לשם המבחן
+            a.download="${examTitle} - בדוק - " + (document.getElementById('studentNameField').value || 'תלמיד') + ".html"; a.click();
+        }
         <\/script></body></html>`;
     }
 };
