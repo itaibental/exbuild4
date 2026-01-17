@@ -107,12 +107,6 @@ const HTMLBuilder = {
         .teacher-comment { background: #fff; }
         .model-answer-secret { margin-top: 10px; border: 1px dashed #f39c12; padding: 10px; background: #fffdf5; border-radius: 4px; font-size: 0.9em; color: #555; }
         
-        .sound-check-box { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); padding: 15px; border-radius: 8px; margin-bottom: 30px; max-width: 600px; text-align: center; }
-        .sound-check-text { font-size: 0.95em; margin-bottom: 15px; color: #ecf0f1; line-height: 1.5; }
-        .sound-btn { background: #3498db; border: none; padding: 10px 25px; border-radius: 5px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 auto; font-size: 1.1em; transition: background 0.2s, transform 0.1s; width: auto; }
-        .sound-btn:hover { background: #2980b9; }
-        .sound-btn.playing { background: #e74c3c; animation: pulse 1s infinite; }
-
         #highlighterTool { position: fixed; top: 150px; right: 20px; width: 50px; background: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.2); border-radius: 30px; padding: 15px 0; display: flex; flex-direction: column; align-items: center; gap: 12px; z-index: 10000; border: 1px solid #ddd; transition: opacity 0.3s; }
         .color-btn { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s; display: flex; align-items: center; justify-content: center; overflow: hidden;}
         .color-btn:hover { transform: scale(1.2); }
@@ -137,14 +131,6 @@ const HTMLBuilder = {
         <div id="startScreen">
             <h1>${examTitle}</h1>
             <p style="font-size: 1.2em; margin-bottom: 20px;">משך הבחינה: ${duration} דקות</p>
-            <div class="sound-check-box">
-                <p class="sound-check-text">
-                    🔊 <strong>בדיקת שמע:</strong> חברו אוזניות ובדקו סאונד לפני תחילת המבחן.
-                </p>
-                <button id="soundCheckBtn" class="sound-btn" onclick="toggleSoundCheck()">
-                    <span>▶️ נגן צליל בדיקה</span>
-                </button>
-            </div>
             <button onclick="startExamTimer()" style="padding:15px 30px;font-size:1.5em;background:#27ae60;color:white;border:none;border-radius:10px;">התחל בחינה (מסך מלא)</button>
         </div>
         
@@ -169,7 +155,7 @@ const HTMLBuilder = {
             </div>
             <div style="background:#fff;padding:20px;border:1px solid var(--accent);border-radius:10px;margin-bottom:20px;"><label>שם תלמיד:</label><input type="text" id="studentNameField" value="${studentName}" style="width:100%;padding:10px;"></div>
             ${globalInstructionsHTML}
-            <div class="tabs">${tabsHTML}</div>
+            <div class="tabs" id="examTabs">${tabsHTML}</div>
             <form id="examForm">${sectionsHTML}</form>
             <div style="text-align:center;margin-top:50px;"><button onclick="submitExam()" style="background:#27ae60;color:white;padding:15px 30px;border-radius:30px;">הגש בחינה</button></div>
         </div>
@@ -182,34 +168,43 @@ const HTMLBuilder = {
             document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
             if(btn) btn.classList.add('active');
             
-            if(color && color !== 'eraser') {
-                document.body.style.cursor = "crosshair";
-            } else if (color === 'eraser') {
-                document.body.style.cursor = "help";
+            const container = document.getElementById('mainContainer');
+            
+            if(color) {
+                // הפיכת האזור ל"עריך" כדי שפקודות הצבע יעבדו בבטחה
+                container.contentEditable = "true";
+                document.body.style.cursor = (color === 'eraser') ? "help" : "crosshair";
             } else {
+                container.contentEditable = "false";
                 document.body.style.cursor = "default";
             }
         }
 
-        document.addEventListener('mouseup', () => {
+        // חסימת הקלדה במכולה בזמן שהיא contentEditable (כדי למנוע מהתלמיד למחוק שאלות)
+        document.getElementById('mainContainer').addEventListener('keydown', (e) => {
+            if (markerColor && !e.target.closest('textarea') && !e.target.closest('input')) {
+                // מאפשרים רק קיצורי דרך של מערכת או בחירה, חוסמים הקלדה רגילה
+                if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                }
+            }
+        });
+
+        document.addEventListener('mouseup', (e) => {
             if (!markerColor) return;
+            
+            // בדיקה אם המשתמש לוחץ בתוך אזורי טקסט - שם אסור לסמן
+            if(e.target.closest('textarea') || e.target.closest('input') || e.target.closest('#highlighterTool')) return;
+
             const sel = window.getSelection();
             if (sel.rangeCount > 0 && !sel.isCollapsed) {
-                const range = sel.getRangeAt(0);
-                // הגנה מפני סימון בתוך שדות קלט
-                const common = range.commonAncestorContainer;
-                const parent = common.nodeType === 1 ? common : common.parentNode;
-                if(parent.closest('#highlighterTool') || parent.closest('textarea') || parent.closest('input')) return;
-
-                document.designMode = "on";
                 if(markerColor === 'eraser') {
-                    // מחיקת סימון על ידי החזרת הרקע לשקוף
                     document.execCommand("hiliteColor", false, "transparent");
                 } else {
                     document.execCommand("styleWithCSS", false, true);
                     document.execCommand("hiliteColor", false, markerColor);
                 }
-                document.designMode = "off";
+                // ניקוי הבחירה לאחר הסימון
                 sel.removeAllRanges();
             }
         });
@@ -239,11 +234,12 @@ const HTMLBuilder = {
         }
         function runTimer(){timerInterval=setInterval(()=>{totalTime--;updateTimer();if(totalTime<=0){clearInterval(timerInterval);document.getElementById('timesUpModal').style.display='flex';}},1000);}
         function updateTimer(){let m=Math.floor(totalTime/60),s=totalTime%60;document.getElementById('timerText').innerText=(m<10?'0'+m:m)+':'+(s<10?'0'+s:s);}
-        function showPart(id){document.querySelectorAll('.exam-section').forEach(e=>e.classList.remove('active'));document.getElementById('part-'+id).classList.add('active');document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));event.target.classList.add('active');}
+        function showPart(id){document.querySelectorAll('.exam-section').forEach(e=>e.classList.remove('active'));document.getElementById('part-'+id).classList.add('active');document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));if(event.target.classList.contains('tab-btn')) event.target.classList.add('active');}
         function calcTotal(){let t=0;document.querySelectorAll('.grade-input').forEach(i=>{if(i.value)t+=parseFloat(i.value);});document.getElementById('teacherCalculatedScore').innerText=t;}
         function submitExam(){
             document.body.dataset.status='submitted'; if(document.fullscreenElement)document.exitFullscreen();
             clearInterval(timerInterval);
+            document.getElementById('mainContainer').contentEditable = "false";
             document.querySelectorAll('input,textarea').forEach(e=>{e.setAttribute('value',e.value); if(e.tagName==='TEXTAREA')e.innerHTML=e.value;});
             const html="<!DOCTYPE html>"+document.documentElement.outerHTML;
             const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([html],{type:'text/html'})); a.download="פתור-"+document.getElementById('studentNameField').value+".html"; a.click();
