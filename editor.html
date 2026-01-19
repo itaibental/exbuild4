@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EXAMBUILDER 4.0 - עורך מבחנים</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="modal-overlay" id="confirmModal">
+    <div class="modal-box">
+        <div class="modal-title" id="modalTitle">אישור פעולה</div>
+        <div class="modal-text" id="modalText">האם אתה בטוח?</div>
+        <div class="modal-actions">
+            <button class="modal-btn" id="btnConfirmYes" style="background: var(--danger); color: white;">מחק</button>
+            <button class="modal-btn btn-cancel" onclick="UI.closeModal()">ביטול</button>
+        </div>
+    </div>
+</div>
+
+<div id="textFormatTooltip">
+    <button onmousedown="App.applyFormat('b')" title="מודגש"><b>B</b></button>
+    <button onmousedown="App.applyFormat('u')" title="קו תחתון"><u>U</u></button>
+    <button onmousedown="App.applyFormat('i')" title="נטוי"><i>I</i></button>
+</div>
+
+<header class="main-app-header">
+    <div style="display:flex; align-items:center; gap:20px;">
+        <a href="index.html" style="color:white; text-decoration:none; font-size:1.2rem; background:rgba(255,255,255,0.1); width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:10px;">🏠</a>
+        <h1>EXAMBUILDER 4.0</h1>
+    </div>
+    <div style="display:flex; gap:10px;">
+        <button onclick="App.saveProject()" style="background:rgba(255,255,255,0.1); color:white; font-size:0.85rem;">💾 שמור טיוטה</button>
+        <button onclick="document.getElementById('projectFileInput').click()" style="background:rgba(255,255,255,0.1); color:white; font-size:0.85rem;">📂 טען פרויקט</button>
+        <input type="file" id="projectFileInput" accept=".json,.html" style="display:none;" onchange="App.handleProjectLoad(event)">
+    </div>
+</header>
+
+<div class="container">
+    <!-- עמודה ימנית: כלי עריכה -->
+    <div class="col-panel col-right" id="rightPanel">
+        <div class="scroll-content">
+            <h2>✏️ עריכת מבחן</h2>
+            
+            <details class="editor-category" open>
+                <summary>🌐 הגדרות כלליות</summary>
+                <div class="category-content">
+                    <div class="form-group">
+                        <label>כותרת המבחן</label>
+                        <input type="text" id="examTitleInput" placeholder="למשל: בחינת בגרות בתנ״ך" oninput="App.updateExamTitle()">
+                    </div>
+                    <div style="display:flex; gap:10px;" class="form-group">
+                        <div style="flex:1">
+                            <label>זמן (דקות)</label>
+                            <input type="number" id="examDurationInput" value="90">
+                        </div>
+                        <div style="flex:1">
+                            <label>קוד מורה</label>
+                            <input type="text" id="unlockCodeInput" value="1234">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>לוגו בית ספר</label>
+                        <input type="file" id="schoolLogoInput" accept="image/*" onchange="App.handleLogoUpload(event)">
+                    </div>
+                </div>
+            </details>
+
+            <details class="editor-category" open>
+                <summary>📝 תוכן והנחיות</summary>
+                <div class="category-content">
+                    <div class="form-group">
+                        <label>הנחיות כלליות (יופיעו בהתחלה)</label>
+                        <textarea id="examInstructions" rows="3" oninput="App.updateInstructionsPreview()" placeholder="למשל: יש לענות על 4 מתוך 6 שאלות..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>ניהול פרקים/חלקים</label>
+                        <div style="display:flex; gap:8px;">
+                            <select id="qPart" onchange="App.onPartSelectChange()" style="flex:1"></select>
+                            <button onclick="App.addPart()" style="background:var(--success); color:white; width:40px;">+</button>
+                            <button onclick="App.removePart()" style="background:var(--danger); color:white; width:40px;">-</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>שם הפרק הנוכחי</label>
+                        <input type="text" id="partNameInput" oninput="App.updatePartName()">
+                    </div>
+                    <div class="form-group">
+                        <label>הנחיות לפרק זה</label>
+                        <textarea id="partInstructions" rows="2" oninput="App.savePartInstructions()"></textarea>
+                    </div>
+                </div>
+            </details>
+
+            <details class="editor-category" open>
+                <summary>❓ הוספת שאלה</summary>
+                <div class="category-content">
+                    <div class="form-group">
+                        <label>תוכן השאלה</label>
+                        <textarea id="qText" rows="4" placeholder="הקלד כאן את השאלה..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>סעיפים (אופציונלי)</label>
+                        <div id="subQuestionsList"></div>
+                        <button onclick="App.addSubQuestionField()" style="background:var(--accent-light); color:var(--accent); width:100%; border:1px dashed var(--accent); margin-top:5px;">+ הוסף סעיף</button>
+                    </div>
+                    <div class="form-group" id="mainModelAnswerContainer">
+                        <label>מחוון (תשובה נכונה - למורה בלבד)</label>
+                        <textarea id="qModelAnswer" rows="2" style="background:#fffcf0;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>ניקוד לשאלה</label>
+                        <input type="number" id="qPoints" value="10">
+                    </div>
+                    <div class="form-group">
+                        <label>מדיה (YouTube / תמונה)</label>
+                        <input type="text" id="qVideo" placeholder="קישור לוידאו..." style="margin-bottom:5px;">
+                        <input type="text" id="qImage" placeholder="קישור לתמונה...">
+                    </div>
+                    <button class="btn-add" onclick="App.addQuestion()">הוסף שאלה למבחן</button>
+                </div>
+            </details>
+
+            <div class="stats-box" style="background:white; border:1px solid var(--sidebar-border); border-radius:12px; padding:1rem; margin-top:1rem;">
+                <h4 style="margin-top:0;">📊 סיכום נקודות</h4>
+                <div id="statsContainer"></div>
+                <div style="font-weight:800; border-top:1px solid #eee; padding-top:10px; margin-top:10px; display:flex; justify-content:space-between;">
+                    <span>סה"כ ניקוד:</span>
+                    <span id="totalPoints">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- עמודה אמצעית: תצוגה מקדימה -->
+    <div class="col-middle">
+        <div id="questionsList">
+            <div id="previewHeader">
+                <img id="previewLogo" src="" alt="" style="display:none;">
+                <h1 id="previewExamTitle">בחינת בגרות</h1>
+                <div style="max-width:300px; margin:20px auto;">
+                    <input type="text" id="studentNameInput" placeholder="שם התלמיד (תצוגה מקדימה)" oninput="App.updateFilenamePreview()" style="text-align:center; border:none; border-bottom:2px dashed #ccc; border-radius:0;">
+                </div>
+            </div>
+            <div id="previewInstructionsBox"></div>
+            <div class="tabs" id="previewTabs"></div>
+            <div class="current-part-instructions-box" style="margin-bottom:20px;">
+                <textarea id="previewPartInstructions" placeholder="הנחיות לפרק זה..." oninput="App.updatePartInstructionsFromPreview(this.value)"></textarea>
+            </div>
+            <div id="previewQuestionsContainer"></div>
+        </div>
+    </div>
+
+    <!-- עמודה שמאלית: הגדרות הגשה והפצה -->
+    <div class="col-panel col-left">
+        <div class="scroll-content">
+            <h3>🚀 הפצה והגשה</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1.5rem;">הגדר לאן המבחן יישלח בסיום.</p>
+            
+            <div class="form-group">
+                <label>מייל המורה להגשה</label>
+                <input type="email" id="teacherEmailInput" placeholder="teacher@school.org">
+            </div>
+            <div class="form-group">
+                <label>קישור לתיקיית Google Drive</label>
+                <input type="text" id="driveFolderInput" placeholder="https://drive.google.com/...">
+                <small style="color:var(--text-muted); font-size:0.75rem;">התיקייה תיפתח לתלמיד אוטומטית בעת הלחיצה על 'הגש'.</small>
+            </div>
+            
+            <hr style="border:0; border-top:1px solid #eee; margin:2rem 0;">
+            
+            <div style="background:var(--accent-light); padding:1rem; border-radius:12px; margin-bottom:1rem;">
+                <p style="font-size:0.8rem; margin:0; color:var(--accent);">שם הקובץ שייוצר:</p>
+                <strong id="filenamePreview" style="font-size:0.9rem; word-break:break-all;">תלמיד - מבחן.html</strong>
+            </div>
+
+            <button class="btn-download" onclick="Generator.generateAndDownload()">📥 הורד מבחן (HTML)</button>
+            <button class="btn-download" style="background:var(--primary); margin-top:10px;" onclick="Generator.generateAndDownloadDocx()">📄 הורד כ-Word</button>
+            
+            <div style="margin-top:2rem; font-size:0.8rem; line-height:1.5; color:var(--text-muted);">
+                <b>איך זה עובד?</b><br>
+                1. בנה את המבחן והנחיותיו.<br>
+                2. הורד את קובץ ה-HTML.<br>
+                3. שלח לתלמידים.<br>
+                4. התלמיד עונה, מגיש, והקובץ הפתור נשמר אצלו ונשלח אליך.
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="main-footer">
+    EXAMBUILDER 4.0 - נוצר עבור מורים ומורות. כל הזכויות שמורות ©️ 2026
+</footer>
+
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/generator-html.js"></script>
+<script src="js/generator-docx.js"></script>
+<script src="js/generator.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
