@@ -1,19 +1,15 @@
+/**
+ * ExamState - המקור היחיד לאמת (Single Source of Truth) עבור נתוני המבחן.
+ */
 const ExamState = {
     questions: [],
-    parts: [
-        { id: 'A', name: 'חלק ראשון' },
-        { id: 'B', name: 'חלק שני' },
-        { id: 'C', name: 'חלק שלישי' }
-    ],
+    parts: [{ id: 'A', name: 'חלק ראשון' }],
     currentTab: 'A',
     studentName: '',
     examTitle: 'מבחן בגרות', 
     logoData: null,
     solutionDataUrl: null,
-    instructions: {
-        general: '',
-        parts: {} 
-    },
+    instructions: { general: '', parts: {} },
     partNamesList: ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שביעי", "שמיני", "תשיעי", "עשירי"],
     subLabels: ["א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י"],
     tempSubQuestions: [],
