@@ -1,13 +1,5 @@
-// קובץ נתונים - ארכיון מבחנים
-// עדכון אחרון: 1/17/2026, 12:25:31 AM
 
 const examsDB = [
-    {
-        "id": 1768602325433,
-        "name": "ניסיון",
-        "year": 2026,
-        "fileName": "example.html",
-        "filePath": "example.html",
-        "dateAdded": 1768602325433
-    }
+    { id: 1, name: "בגרות במתמטיקה", year: 2023, fileName: "math_2023.html" },
+    { id: 2, name: "היסטוריה - קיץ", year: 2022, fileName: "hist_2022.html" }
 ];

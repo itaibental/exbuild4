@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ארכיון מבחנים</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { height: auto !important; overflow-y: auto !important; display: block !important; }
+        .archive-container { width: 95%; margin: 0 auto; padding: 3% 0; }
+        #examGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(20%, 250px)); gap: 3%; padding: 2%; }
+        #searchBox { width: 60%; display: block; margin: 0 auto 5% auto; padding: 1.5%; border-radius: 50px; font-size: 120%; border: 1px solid #ccc; }
+        .main-app-header { background: var(--primary); color: white; padding: 1.5% 2%; display: flex; justify-content: space-between; align-items: center; }
+    </style>
+</head>
+<body>
+    <header class="main-app-header">
+        <a href="index.html" style="color:white; text-decoration:none; font-size:150%;">🏠</a>
+        <h1>ארכיון מבחנים</h1>
+        <button onclick="alert('אזור זה למורים בלבד')" style="background:rgba(255,255,255,0.1); border:1px solid white; color:white; padding:0.5% 2%; border-radius:4px;">👨‍🏫 מורה</button>
+    </header>
+    <div class="archive-container">
+        <input type="text" id="searchBox" placeholder="חפש מבחן לפי שם או שנה..." oninput="renderArchive()">
+        <div id="examGrid"></div>
+    </div>
+    <script src="exams_data.js"></script>
+    <script src="js/archive.js"></script>
+</body>
+</html>
