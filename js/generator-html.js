@@ -1,14 +1,16 @@
 /**
- * HTMLBuilder - גרסה עם העלאה אוטומטית לדרייב
+ * HTMLBuilder - גרסה מעודכנת עם העלאה אוטומטית ל-Google Drive
+ * כולל את ה-URL המעודכן של ה-Apps Script
  */
 const HTMLBuilder = {
+    // פונקציות עזר ליצירת סמני עכבר (Cursors)
     createMarkerCursor: function(color) {
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><path fill="${color}" stroke="black" stroke-width="1" d="M28.06 6.94L25.06 3.94a2.003 2.003 0 0 0-2.83 0l-16.17 16.17a2.003 2.003 0 0 0-.58 1.41V26h4.48c.53 0 1.04-.21 1.41-.59l16.17-16.17c.79-.78.79-2.05.52-2.3zM8.5 24H7v-1.5l14.5-14.5 1.5 1.5L8.5 24z"/><path fill="${color}" d="M4 28l4-4H4z"/></svg>`;
+        const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><path fill="' + color + '" stroke="black" stroke-width="1" d="M28.06 6.94L25.06 3.94a2.003 2.003 0 0 0-2.83 0l-16.17 16.17a2.003 2.003 0 0 0-.58 1.41V26h4.48c.53 0 1.04-.21 1.41-.59l16.17-16.17c.79-.78.79-2.05.52-2.3zM8.5 24H7v-1.5l14.5-14.5 1.5 1.5L8.5 24z"/><path fill="' + color + '" d="M4 28l4-4H4z"/></svg>';
         return 'url(data:image/svg+xml;base64,' + btoa(svg) + ') 0 32, auto';
     },
 
     createEraserCursor: function() {
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="#000000" d="M15.14,3c-0.51,0-1.02,0.2-1.41,0.59L2.59,14.73C1.81,15.51,1.81,16.78,2.59,17.56l5.85,5.85c0.39,0.39,0.9,0.59,1.41,0.59s1.02-0.2,1.41-0.59l11.14-11.14c0.78-0.78,0.78-2.05,0-2.83l-5.85-5.85C16.17,3.2,15.65,3,15.14,3z M15.14,4.41l5.85,5.85l-11.14,11.14l-5.85-5.85L15.14,4.41z"/></svg>`;
+        const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="#000000" d="M15.14,3c-0.51,0-1.02,0.2-1.41,0.59L2.59,14.73C1.81,15.51,1.81,16.78,2.59,17.56l5.85,5.85c0.39,0.39,0.9,0.59,1.41,0.59s1.02-0.2,1.41-0.59l11.14-11.14c0.78-0.78,0.78-2.05,0-2.83l-5.85-5.85C16.17,3.2,15.65,3,15.14,3z M15.14,4.41l5.85,5.85l-11.14,11.14l-5.85-5.85L15.14,4.41z"/></svg>';
         return 'url(data:image/svg+xml;base64,' + btoa(svg) + ') 0 24, auto';
     },
 
@@ -122,14 +124,8 @@ const HTMLBuilder = {
         .grade-input { width: 60px; padding: 5px; text-align: center; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; }
         .teacher-comment { background: #fff; }
         .model-answer-secret { margin-top: 10px; border: 1px dashed #f39c12; padding: 10px; background: #fffdf5; border-radius: 4px; font-size: 0.9em; color: #555; }
-        
-        .sound-check-box { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); padding: 15px; border-radius: 8px; margin-bottom: 30px; max-width: 600px; text-align: center; }
-        .sound-check-text { font-size: 0.95em; margin-bottom: 15px; color: #ecf0f1; line-height: 1.5; }
-        .sound-btn { background: #3498db; border: none; padding: 10px 25px; border-radius: 5px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 auto; font-size: 1.1em; transition: background 0.2s, transform 0.1s; width: auto; }
-        .sound-btn:hover { background: #2980b9; }
-        .sound-btn.playing { background: #e74c3c; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
+        /* קלאסים לסמני העכבר */
         .cursor-yellow { cursor: ${cursorYellow}; }
         .cursor-green { cursor: ${cursorGreen}; }
         .cursor-pink { cursor: ${cursorPink}; }
@@ -275,34 +271,49 @@ const HTMLBuilder = {
             document.querySelectorAll('input,textarea').forEach(e=>{e.setAttribute('value',e.value); if(!e.classList.contains('grade-input')) { e.setAttribute('readonly','true'); e.disabled=true; } });
             document.querySelectorAll('textarea').forEach(t=>t.innerHTML=t.value);
             
-            const fileName="פתור-"+(document.getElementById('studentNameField').value||'תלמיד')+".html";
-            const html="<!DOCTYPE html>"+document.documentElement.outerHTML;
+            const studentName = document.getElementById('studentNameField').value || 'תלמיד';
+            const fileName = "פתור-" + studentName + ".html";
+            const html = "<!DOCTYPE html>" + document.documentElement.outerHTML;
             
             document.getElementById('successModal').style.display='flex';
             const statusBox = document.getElementById('uploadStatusMsg');
             
-            // ניסיון העלאה אוטומטית לדרייב
-            if("${driveLink}" && "${driveLink}".includes("exec")) {
-                const formData = new FormData();
-                formData.append('fileName', fileName);
-                formData.append('fileContent', html);
-                
-                fetch("${driveLink}", { method: 'POST', mode: 'no-cors', body: formData })
-                .then(()=>{ 
-                    statusBox.innerText="המבחן הועלה בהצלחה לדרייב!"; statusBox.style.color="#27ae60"; 
-                })
-                .catch(()=>{ 
-                    statusBox.innerText="העלאה אוטומטית נכשלה. מבצע הורדה ידנית..."; statusBox.style.color="#e74c3c";
-                    downloadLocally(html, fileName);
-                });
-            } else {
-                statusBox.innerText="המבחן מוכן להורדה.";
+            // הכתובת המעודכנת של ה-Apps Script
+            const scriptURL = "https://script.google.com/macros/s/AKfycbw_X6TaMh7XbK5GzMETSJq5wxm_CD2ZUwVgMgy53qlImPauEXJjy2TsPXpyZntFuErjTQ/exec";
+            
+            const formData = new FormData();
+            formData.append('fileName', fileName);
+            formData.append('fileContent', html);
+            
+            fetch(scriptURL, { 
+                method: 'POST', 
+                mode: 'no-cors', 
+                body: formData 
+            })
+            .then(() => { 
+                statusBox.innerText = "המבחן נשלח והועלה בהצלחה לדרייב!"; 
+                statusBox.style.color = "#27ae60"; 
+            })
+            .catch((err) => { 
+                console.error("Upload Error:", err);
+                statusBox.innerText = "העלאה אוטומטית נכשלה. מבצע הורדה למחשב כגיבוי..."; 
+                statusBox.style.color = "#e74c3c";
                 downloadLocally(html, fileName);
+            });
+
+            // הצגת כפתורי הגשה ידניים לגיבוי
+            const acts = document.getElementById('submissionActions');
+            if("${teacherEmail}"){
+                const mailLink = "https://mail.google.com/mail/?view=cm&to=${teacherEmail}&su=Exam Submission&body=Attached";
+                acts.innerHTML += '<a href="'+mailLink+'" target="_blank" style="display:block;margin:10px;padding:10px;background:#3498db;color:white;text-decoration:none;">שלח במייל (גיבוי)</a>';
             }
         }
         
         function downloadLocally(content, name){
-            const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type:'text/html'})); a.download=name; a.click();
+            const a = document.createElement('a'); 
+            a.href = URL.createObjectURL(new Blob([content],{type:'text/html'})); 
+            a.download = name; 
+            a.click();
         }
 
         function unlockExam(){ if(simpleHash(document.getElementById('teacherCodeInput').value)==="${unlockCodeHash}"){ document.getElementById('securityModal').style.display='none'; document.documentElement.requestFullscreen(); runTimer(); } else alert('קוד שגוי'); }
@@ -314,6 +325,10 @@ const HTMLBuilder = {
             document.querySelector('.student-submit-area').style.display='none';
             document.querySelectorAll('.exam-section').forEach(e=>e.style.display='block');
             document.querySelector('.tabs').style.display='none';
+            if("${solutionDataUrl}"){
+                document.getElementById('teacherSolutionContainer').style.display='block';
+                document.getElementById('solutionFrame').src="${solutionDataUrl}";
+            }
         }
         function saveGradedExam(){
             document.querySelectorAll('input,textarea').forEach(i=>i.setAttribute('value',i.value));
