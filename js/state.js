@@ -1,62 +1,53 @@
-// קובץ: exbuild4-main/js/state.js
-
 const ExamState = {
-    questions: [],
+    examTitle: "מבחן חדש",
+    duration: 90,
+    unlockCodeHash: "1234", // שמירת ערך ה-Hash או הסיסמה הגלויה (לפשטות כרגע)
+    teacherEmail: "",
+    driveLink: "",
+    logoData: "",
+    design: { fontFamily: "'Rubik', sans-serif", fontSize: "16px" }, // ברירת מחדל לעיצוב
+    
     parts: [
-        { id: 'A', name: 'חלק ראשון' },
-        { id: 'B', name: 'חלק שני' },
-        { id: 'C', name: 'חלק שלישי' }
+        { id: 'part1', name: 'פרק ראשון' }
     ],
-    currentTab: 'A',
-    studentName: '',
-    examTitle: 'מבחן בגרות', 
-    logoData: null,
-    solutionDataUrl: null,
+    
+    questions: [],
+    
     instructions: {
         general: '',
-        parts: {} 
-    },
-    partNamesList: ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שביעי", "שמיני", "תשיעי", "עשירי"],
-    subLabels: ["א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י"],
-    tempSubQuestions: [],
-
-    addQuestion: function(q) { 
-        this.questions.push(q); 
+        parts: {}
     },
 
-    // --- התיקון: פונקציה לעדכון שאלה קיימת ---
-    updateQuestion: function(id, updatedQ) {
-        const index = this.questions.findIndex(q => q.id === id);
-        if (index !== -1) {
-            this.questions[index] = updatedQ;
+    addPart() {
+        const id = 'part' + Date.now();
+        this.parts.push({ id: id, name: 'פרק חדש' });
+        return id;
+    },
+
+    addQuestion(partId) {
+        const newQ = {
+            id: Date.now(),
+            part: partId,
+            text: '',
+            points: 10,
+            subQuestions: [],
+            imageUrl: '',
+            videoUrl: ''
+        };
+        this.questions.push(newQ);
+        return newQ;
+    },
+
+    addSubQuestion(qId) {
+        const q = this.questions.find(item => item.id === qId);
+        if (q) {
+            if(!q.subQuestions) q.subQuestions = [];
+            q.subQuestions.push({
+                id: Date.now(),
+                text: '',
+                points: 5,
+                modelAnswer: ''
+            });
         }
-    },
-    // ------------------------------------------
-
-    removeQuestion: function(id) { 
-        this.questions = this.questions.filter(q => q.id !== id); 
-    },
-
-    addPart: function(part) { 
-        this.parts.push(part); 
-    },
-
-    removePart: function(id) {
-        this.questions = this.questions.filter(q => q.part !== id);
-        this.parts = this.parts.filter(p => p.id !== id);
-        delete this.instructions.parts[id];
-    },
-
-    updatePartName: function(id, name) {
-        const p = this.parts.find(p => p.id === id);
-        if (p) p.name = name;
-    },
-
-    getNextPartId: function() {
-        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        for (let i=0; i<letters.length; i++) {
-            if (!this.parts.find(p => p.id === letters[i])) return letters[i];
-        }
-        return 'P' + Date.now();
     }
 };
