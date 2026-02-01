@@ -23,7 +23,7 @@ const ExamState = {
     removePart: function(id) {
         this.questions = this.questions.filter(q => q.part !== id);
         this.parts = this.parts.filter(p => p.id !== id);
-        delete this.instructions.parts[id];
+        if (this.instructions.parts) delete this.instructions.parts[id];
     },
     updatePartName: function(id, name) {
         const p = this.parts.find(p => p.id === id);
