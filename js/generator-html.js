@@ -8,7 +8,7 @@ const HTMLBuilder = {
 
         const sectionsHTML = parts.map((p, idx) => {
             const partQuestions = questions.filter(q => q.part === p.id);
-            const partInstrHtml = instructions.parts[p.id] ? `<div class="part-instructions">${instructions.parts[p.id].replace(/\n/g, '<br>')}</div>` : '';
+            const partInstrHtml = (instructions.parts && instructions.parts[p.id]) ? `<div class="part-instructions">${instructions.parts[p.id].replace(/\n/g, '<br>')}</div>` : '';
             
             let qHtml = '';
             if(partQuestions.length === 0) {
@@ -340,10 +340,11 @@ const HTMLBuilder = {
             document.body.dataset.status = 'grading';
             document.querySelectorAll('.exam-section').forEach(e=>e.style.display='block');
             document.querySelector('.tabs').style.display='none';
-            if("${solutionDataUrl}"){
+            if("${solutionDataUrl}" && "${solutionDataUrl}" !== "null"){
                 document.getElementById('teacherSolutionContainer').style.display='block';
                 document.getElementById('solutionFrame').src="${solutionDataUrl}";
             }
+            calcTotal();
         }
         function saveGradedExam(){
             document.querySelectorAll('input,textarea').forEach(i=>i.setAttribute('value',i.value));
@@ -370,7 +371,7 @@ const HTMLBuilder = {
                 const answer = ansArea ? ansArea.value : '(אין תשובה)';
                 const gradeInp = block.querySelector('.grade-input');
                 const grade = gradeInp ? gradeInp.value : '0';
-                const maxPoints = block.dataset.points || block.querySelector('.grade-max')?.innerText.replace(/\D/g,'') || '';
+                const maxPoints = block.dataset.points || block.querySelector('.grade-max')?.innerText.replace(/\\D/g,'') || '';
                 const commentInp = block.querySelector('.teacher-comment');
                 const comment = commentInp ? commentInp.value : '';
                 content += '<div class="q-box">';
@@ -385,7 +386,7 @@ const HTMLBuilder = {
                 content += '</div>';
             });
             content += '</body></html>';
-            const blob = new Blob(['\ufeff', content], { type: 'application/msword' });
+            const blob = new Blob(['\\ufeff', content], { type: 'application/msword' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
