@@ -23,26 +23,35 @@ const UI = {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
         toast.textContent = message;
-        this.elements.toastContainer.appendChild(toast);
-        void toast.offsetWidth; 
-        toast.classList.add('visible');
-        setTimeout(() => {
-            toast.classList.remove('visible');
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
+        if (this.elements.toastContainer) {
+            this.elements.toastContainer.appendChild(toast);
+            void toast.offsetWidth; 
+            toast.classList.add('visible');
+            setTimeout(() => {
+                toast.classList.remove('visible');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
     },
     showConfirm: function(title, text, callback) {
-        document.getElementById('modalTitle').textContent = title;
-        document.getElementById('modalText').textContent = text;
-        this.elements.confirmModal.classList.add('open');
-        this.confirmCallback = callback;
+        const titleEl = document.getElementById('modalTitle');
+        const textEl = document.getElementById('modalText');
+        if (titleEl && textEl && this.elements.confirmModal) {
+            titleEl.textContent = title;
+            textEl.textContent = text;
+            this.elements.confirmModal.classList.add('open');
+            this.confirmCallback = callback;
+        }
     },
     closeModal: function() {
-        this.elements.confirmModal.classList.remove('open');
-        this.confirmCallback = null;
+        if (this.elements.confirmModal) {
+            this.elements.confirmModal.classList.remove('open');
+            this.confirmCallback = null;
+        }
     },
     renderPartSelector: function() {
         const el = this.elements.qPart;
+        if (!el) return;
         el.innerHTML = '';
         ExamState.parts.forEach(p => {
             const opt = document.createElement('option');
@@ -54,6 +63,7 @@ const UI = {
     },
     renderTabs: function() {
         const container = this.elements.previewTabs;
+        if (!container) return;
         container.innerHTML = '';
         ExamState.parts.forEach(p => {
             const div = document.createElement('div');
@@ -70,6 +80,7 @@ const UI = {
     },
     updateStats: function() {
         const container = this.elements.statsContainer;
+        if (!container) return;
         container.innerHTML = '';
         let total = 0;
         ExamState.parts.forEach(p => {
@@ -80,10 +91,11 @@ const UI = {
             container.appendChild(div);
         });
         ExamState.questions.forEach(q => total += q.points);
-        this.elements.totalPoints.textContent = total;
+        if (this.elements.totalPoints) this.elements.totalPoints.textContent = total;
     },
     renderPreview: function() {
         const container = this.elements.previewQuestionsContainer;
+        if (!container) return;
         const currentPartId = ExamState.currentTab;
         const filtered = ExamState.questions.filter(q => q.part === currentPartId);
         if (filtered.length === 0) {
@@ -130,8 +142,9 @@ const UI = {
         }).join('');
         container.innerHTML = questionsHTML;
     },
-    renderSubQuestionInputs: function() {
+    renderSubQuestionInputs: function(shouldFocus = true) {
         const list = this.elements.subQuestionsList;
+        if (!list) return;
         list.innerHTML = '';
         ExamState.tempSubQuestions.forEach((sq, idx) => {
             const label = ExamState.subLabels[idx] || (idx + 1);
@@ -151,12 +164,14 @@ const UI = {
         });
         if (ExamState.tempSubQuestions.length > 0) {
             const total = ExamState.tempSubQuestions.reduce((acc, curr) => acc + (curr.points || 0), 0);
-            this.elements.qPoints.value = total;
-            this.elements.qPoints.disabled = true;
-            this.elements.mainModelAnswerContainer.style.display = 'none';
+            if (this.elements.qPoints) {
+                this.elements.qPoints.value = total;
+                this.elements.qPoints.disabled = true;
+            }
+            if (this.elements.mainModelAnswerContainer) this.elements.mainModelAnswerContainer.style.display = 'none';
         } else {
-            this.elements.qPoints.disabled = false;
-            this.elements.mainModelAnswerContainer.style.display = 'block';
+            if (this.elements.qPoints) this.elements.qPoints.disabled = false;
+            if (this.elements.mainModelAnswerContainer) this.elements.mainModelAnswerContainer.style.display = 'block';
         }
     }
 };
