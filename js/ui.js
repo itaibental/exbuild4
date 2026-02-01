@@ -1,159 +1,178 @@
 const UI = {
-    currentMediaQId: null, // שומר על איזו שאלה אנחנו מוסיפים מדיה
-
-    init() {
-        this.renderEditor();
-        this.populateSettings();
-    },
-
-    // מילוי השדות בסרגל הצד לפי הנתונים הקיימים
-    populateSettings() {
-        document.getElementById('examTitle').value = ExamState.examTitle || '';
-        document.getElementById('generalInstructions').value = ExamState.instructions.general || '';
-        document.getElementById('examDuration').value = ExamState.duration || 90;
-        document.getElementById('driveLink').value = ExamState.driveLink || '';
-        document.getElementById('teacherEmail').value = ExamState.teacherEmail || '';
-    },
-
-    // הפונקציה הראשית שמרנדרת את כל העורך
-    renderEditor() {
-        const container = document.getElementById('editor-container');
-        container.innerHTML = '';
-
-        ExamState.parts.forEach((part, pIdx) => {
-            const partDiv = document.createElement('div');
-            partDiv.className = 'part-container';
-            partDiv.innerHTML = `
-                <div class="part-header">
-                    <input type="text" value="${part.name}" onchange="UI.updatePartName('${part.id}', this.value)" placeholder="שם הפרק...">
-                    <button class="btn-icon delete" onclick="UI.deletePart('${part.id}')" title="מחק פרק"><i class="fas fa-trash"></i></button>
-                </div>
-                <div class="questions-list" id="questions-part-${part.id}"></div>
-                <button onclick="UI.addQuestion('${part.id}')" style="margin-top:10px; background:none; border:1px dashed #bbb; width:100%; padding:10px; cursor:pointer; color:#555;">+ הוסף שאלה לפרק זה</button>
-            `;
-            container.appendChild(partDiv);
-
-            const qList = partDiv.querySelector(`#questions-part-${part.id}`);
-            const partQuestions = ExamState.questions.filter(q => q.part === part.id);
-
-            partQuestions.forEach((q, qIdx) => {
-                qList.appendChild(this.createQuestionCard(q, qIdx + 1));
-            });
+    elements: {},
+    initElements: function() {
+        const idList = [
+            'questionsList', 'previewQuestionsContainer', 'statsContainer', 'totalPoints', 
+            'studentNameInput', 'filenamePreview', 'previewTabs', 
+            'examInstructions', 'examTitleInput', 'previewExamTitle', 'previewLogo', 
+            'examDurationInput', 'unlockCodeInput', 'teacherEmailInput', 'driveFolderInput', 
+            'toastContainer', 'confirmModal', 'previewPartInstructions',
+            'partNameEditor', 'logoStatus', 'currentPartEditor'
+        ];
+        idList.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) this.elements[id] = el;
         });
     },
 
-    // יצירת כרטיס שאלה בודד
-    createQuestionCard(q, index) {
-        const card = document.createElement('div');
-        card.className = 'question-card';
-        
-        let mediaBadge = '';
-        if(q.imageUrl) mediaBadge = `<span style="color:#27ae60; font-size:0.8em;"><i class="fas fa-image"></i> יש תמונה</span>`;
-        if(q.videoUrl) mediaBadge = `<span style="color:#e74c3c; font-size:0.8em;"><i class="fas fa-video"></i> יש וידאו</span>`;
+    showToast: function(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        this.elements.toastContainer.appendChild(toast);
+        void toast.offsetWidth; // Force reflow
+        toast.classList.add('visible');
+        setTimeout(() => {
+            toast.classList.remove('visible');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    },
 
-        card.innerHTML = `
-            <div class="q-toolbar">
-                <strong>שאלה ${index}</strong>
-                <div style="display:flex; gap:10px; align-items:center;">
-                    ${mediaBadge}
-                    <button class="btn-icon" onclick="UI.openMediaModal(${q.id})" title="הוסף מדיה"><i class="fas fa-photo-video"></i></button>
-                    <input type="number" class="points-input" value="${q.points}" onchange="UI.updateQPoints(${q.id}, this.value)" title="ניקוד כולל לשאלה">
-                    <button class="btn-icon delete" onclick="UI.deleteQuestion(${q.id})" title="מחק שאלה"><i class="fas fa-times"></i></button>
-                </div>
-            </div>
-            <div class="q-body">
-                <textarea placeholder="תוכן השאלה..." onchange="UI.updateQText(${q.id}, this.value)">${q.text}</textarea>
-            </div>
-            <div class="sub-questions-list" id="sub-q-list-${q.id}">
-                </div>
-            <button onclick="UI.addSubQuestion(${q.id})" style="font-size:0.9em; background:none; border:none; color:var(--accent); cursor:pointer;">+ הוסף סעיף</button>
-        `;
+    showConfirm: function(title, text, callback) {
+        if(confirm(text)) {
+            callback();
+        }
+    },
 
-        // רינדור הסעיפים
-        const subList = card.querySelector(`#sub-q-list-${q.id}`);
-        if (q.subQuestions && q.subQuestions.length > 0) {
-            q.subQuestions.forEach((sq, sIdx) => {
-                subList.innerHTML += `
+    closeModal: function() {
+        // No modal to close
+    },
+
+    renderTabs: function() {
+        const container = this.elements.previewTabs;
+        container.innerHTML = '';
+        ExamState.parts.forEach(p => {
+            const div = document.createElement('div');
+            div.className = `tab ${p.id === ExamState.currentTab ? 'active' : ''}`;
+            div.textContent = p.name;
+            div.onclick = () => App.setTab(p.id);
+            container.appendChild(div);
+        });
+    },
+
+    updateStats: function() {
+        const container = this.elements.statsContainer;
+        if(!container) return;
+        container.innerHTML = '';
+        let total = 0;
+        ExamState.parts.forEach(p => {
+            const partQs = ExamState.questions.filter(q => q.part === p.id);
+            let partPoints = 0;
+            partQs.forEach(q => partPoints += (parseInt(q.points)||0));
+            const div = document.createElement('div');
+            div.className = 'stat-row';
+            div.innerHTML = `<span>${p.name}:</span> <span>${partPoints} נק'</span>`;
+            container.appendChild(div);
+            total += partPoints;
+        });
+        if(this.elements.totalPoints) this.elements.totalPoints.textContent = total;
+    },
+
+    renderPreview: function() {
+        const container = this.elements.previewQuestionsContainer;
+        const currentPartId = ExamState.currentTab;
+        const filtered = ExamState.questions.filter(q => q.part === currentPartId);
+
+        // Update Part Header Inputs
+        const currentPart = ExamState.parts.find(p => p.id === currentPartId);
+        if(currentPart) {
+            if(this.elements.partNameEditor) this.elements.partNameEditor.value = currentPart.name;
+            if(this.elements.previewPartInstructions) {
+                this.elements.previewPartInstructions.value = ExamState.instructions.parts[currentPartId] || '';
+            }
+        }
+
+        if (filtered.length === 0) {
+            container.innerHTML = `
+            <div style="text-align: center; color: #bdc3c7; padding: 30px; border: 2px dashed #eee; border-radius: 12px;">
+                <h3>עדיין אין שאלות בפרק זה</h3>
+                <p>לחץ על "הוסף שאלה חדשה" למטה כדי להתחיל</p>
+            </div>`;
+            return;
+        }
+
+        const questionsHTML = filtered.map((q, idx) => {
+            // Main Question Media Preview
+            let mediaPreview = '';
+            const imgSrc = Utils.getImageSrc(q.imageUrl);
+            if (imgSrc) mediaPreview += `<div class="media-preview"><img src="${imgSrc}" alt="Question Image"></div>`;
+            
+            // Sub Questions HTML
+            let subQuestionsHTML = '';
+            if (q.subQuestions && q.subQuestions.length > 0) {
+                subQuestionsHTML = q.subQuestions.map((sq, si) => {
+                    const label = ExamState.subLabels[si] || (si + 1);
+                    
+                    // Sub Question Media Preview
+                    let subMediaPreview = '';
+                    const subImgSrc = Utils.getImageSrc(sq.imageUrl);
+                    if (subImgSrc) subMediaPreview += `<div class="media-preview" style="margin-top:5px; text-align:right;"><img src="${subImgSrc}" alt="SubQ Image" style="max-height:100px;"></div>`;
+                    
+                    return `
                     <div class="sub-q-item">
-                        <span style="font-weight:bold; padding-top:10px;">${sIdx+1}.</span>
-                        <div style="flex:1;">
-                            <textarea style="width:100%; height:40px; margin-bottom:0;" placeholder="תוכן הסעיף..." onchange="UI.updateSubQText(${q.id}, ${sq.id}, this.value)">${sq.text}</textarea>
+                        <div class="sub-q-header">
+                            <span>סעיף ${label}'</span>
+                            <button onclick="App.deleteSubQuestion(${q.id}, ${sq.id})" style="color:red; background:none; padding:0; font-size:0.8rem;">🗑️</button>
                         </div>
-                        <div style="display:flex; flex-direction:column; gap:5px;">
-                             <input type="number" class="points-input" style="width:50px; font-size:0.8em;" value="${sq.points}" onchange="UI.updateSubQPoints(${q.id}, ${sq.id}, this.value)" placeholder="נק'">
-                             <button class="btn-icon delete" onclick="UI.deleteSubQuestion(${q.id}, ${sq.id})"><i class="fas fa-trash-alt"></i></button>
+                        <textarea class="sub-q-input" placeholder="תוכן הסעיף..." oninput="App.updateSubQuestionField(${q.id}, ${sq.id}, 'text', this.value)">${sq.text}</textarea>
+                        
+                        <!-- Sub Question Media Inputs -->
+                        <div class="sub-q-media-inputs">
+                            <input type="text" placeholder="🖼️ תמונה (URL)" value="${sq.imageUrl || ''}" onchange="App.updateSubQuestionField(${q.id}, ${sq.id}, 'imageUrl', this.value)" style="font-size:0.8rem; margin-bottom:2px;">
+                            <input type="text" placeholder="🎥 וידאו (URL)" value="${sq.videoUrl || ''}" onchange="App.updateSubQuestionField(${q.id}, ${sq.id}, 'videoUrl', this.value)" style="font-size:0.8rem; margin-bottom:2px;">
                         </div>
+                        ${subMediaPreview}
+
+                        <div style="display:flex; justify-content:space-between; margin-top:5px; align-items:center;">
+                             <input type="text" class="points-input" value="${sq.points}" onchange="App.updateSubQuestionField(${q.id}, ${sq.id}, 'points', this.value)" placeholder="נק'">
+                             <input type="text" placeholder="מחוון לסעיף (אופציונלי)" value="${sq.modelAnswer || ''}" oninput="App.updateSubQuestionField(${q.id}, ${sq.id}, 'modelAnswer', this.value)" style="width:70%; font-size:0.8rem; background:#fffdf5; border-color:#ffeeba;">
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            // Main Model Answer HTML
+            const mainModelHTML = `
+                <div class="model-answer-area">
+                    <textarea placeholder="תשובה לדוגמא / מחוון למורה (לא מוצג לתלמיד)..." oninput="App.updateQuestionField(${q.id}, 'modelAnswer', this.value)">${q.modelAnswer || ''}</textarea>
+                </div>
+            `;
+
+            return `
+            <div class="question-card" id="q-card-${q.id}">
+                <div class="card-toolbar">
+                    <span class="q-number-badge">שאלה ${idx + 1}</span>
+                    <div class="card-actions-top">
+                        <button onclick="App.duplicateQuestion(${q.id})" title="שכפל שאלה"><i class="fas fa-copy"></i></button>
+                        <button onclick="App.deleteQuestion(${q.id})" title="מחק שאלה"><i class="fas fa-trash"></i></button>
                     </div>
-                `;
-            });
-        }
-        return card;
-    },
+                </div>
+                
+                <textarea class="q-main-input" placeholder="הקלד את השאלה כאן..." oninput="App.updateQuestionField(${q.id}, 'text', this.value)">${q.text}</textarea>
+                
+                <div class="media-section">
+                    <div class="media-inputs">
+                        <input type="text" placeholder="קישור לתמונה (URL)" value="${q.imageUrl || ''}" onchange="App.updateQuestionField(${q.id}, 'imageUrl', this.value)">
+                        <input type="text" placeholder="קישור לוידאו (YouTube/Drive)" value="${q.videoUrl || ''}" onchange="App.updateQuestionField(${q.id}, 'videoUrl', this.value)">
+                    </div>
+                    ${mediaPreview}
+                </div>
 
-    // --- עדכונים ל-State ---
+                <div class="sub-qs-container">
+                    ${subQuestionsHTML}
+                    <button class="btn-add-sub-inline" onclick="App.addSubQuestion(${q.id})"><i class="fas fa-plus"></i> הוסף סעיף</button>
+                </div>
 
-    addPart() { ExamState.addPart(); this.renderEditor(); },
-    deletePart(id) { if(confirm('למחוק את הפרק?')) { ExamState.parts = ExamState.parts.filter(p => p.id !== id); this.renderEditor(); } },
-    updatePartName(id, val) { const p = ExamState.parts.find(x => x.id === id); if(p) p.name = val; },
+                ${mainModelHTML}
 
-    addQuestion(partId) { ExamState.addQuestion(partId); this.renderEditor(); },
-    deleteQuestion(id) { 
-        if(confirm('למחוק את השאלה?')) { 
-            ExamState.questions = ExamState.questions.filter(q => q.id !== id); 
-            this.renderEditor(); 
-        } 
-    },
-    updateQText(id, val) { const q = ExamState.questions.find(x => x.id === id); if(q) q.text = val; },
-    updateQPoints(id, val) { const q = ExamState.questions.find(x => x.id === id); if(q) q.points = parseInt(val); },
-
-    addSubQuestion(qId) { ExamState.addSubQuestion(qId); this.renderEditor(); },
-    updateSubQText(qId, sqId, val) { 
-        const q = ExamState.questions.find(x => x.id === qId);
-        const sq = q.subQuestions.find(x => x.id === sqId);
-        if(sq) sq.text = val;
-    },
-    updateSubQPoints(qId, sqId, val) {
-        const q = ExamState.questions.find(x => x.id === qId);
-        const sq = q.subQuestions.find(x => x.id === sqId);
-        if(sq) sq.points = parseInt(val);
-    },
-    deleteSubQuestion(qId, sqId) {
-        const q = ExamState.questions.find(x => x.id === qId);
-        if(q) {
-            q.subQuestions = q.subQuestions.filter(x => x.id !== sqId);
-            this.renderEditor();
-        }
-    },
-
-    // --- טיפול במדיה ומודאל ---
-    openMediaModal(qId) {
-        this.currentMediaQId = qId;
-        const q = ExamState.questions.find(x => x.id === qId);
-        document.getElementById('mediaUrl').value = q.imageUrl || q.videoUrl || '';
-        document.getElementById('mediaType').value = q.videoUrl ? 'video' : 'image';
-        document.getElementById('mediaModal').style.display = 'flex';
-    },
-    closeModal() { document.getElementById('mediaModal').style.display = 'none'; },
-    saveMedia() {
-        const qId = this.currentMediaQId;
-        const type = document.getElementById('mediaType').value;
-        const url = document.getElementById('mediaUrl').value;
-        const q = ExamState.questions.find(x => x.id === qId);
-        
-        if(type === 'image') { q.imageUrl = url; q.videoUrl = ''; }
-        else { q.videoUrl = url; q.imageUrl = ''; }
-        
-        this.closeModal();
-        this.renderEditor();
-    },
-
-    // --- עיצוב (פונטים) ---
-    updateDesign() {
-        const font = document.getElementById('fontFamilySelector').value;
-        const size = document.getElementById('fontSizeSelector').value;
-        document.getElementById('editor-container').style.fontFamily = font;
-        
-        // שמירת ההגדרה ב-CSS שיוזרק למבחן הסופי (דרך Generator)
-        ExamState.design = { fontFamily: font, fontSize: size };
+                <div class="card-footer">
+                    <div class="points-input-group">
+                        <label>ניקוד:</label>
+                        <input type="number" class="points-input" value="${q.points}" onchange="App.updateQuestionField(${q.id}, 'points', parseInt(this.value)||0)">
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+        container.innerHTML = questionsHTML;
     }
 };

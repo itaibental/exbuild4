@@ -43,8 +43,13 @@ const DocxBuilder = {
                         q.subQuestions.forEach((sq, si) => {
                             const label = ExamState.subLabels[si] || (si + 1);
                             content += `<div class="sub-q">
-                                <p><strong>סעיף ${label}'</strong> (${sq.points} נק'): ${sq.text}</p>
-                                <p class="answer-space">_________________________________________________<br>_________________________________________________</p>
+                                <p><strong>סעיף ${label}'</strong> (${sq.points} נק'): ${sq.text}</p>`;
+                            
+                            if (sq.imageUrl) {
+                                content += `<img src="${sq.imageUrl}" style="max-height:150px;" />`;
+                            }
+
+                            content += `<p class="answer-space">_________________________________________________<br>_________________________________________________</p>
                             </div>`;
                         });
                     } else {

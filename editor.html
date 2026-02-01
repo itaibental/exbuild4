@@ -3,109 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>עורך המבחנים - ExamBuilder 4.0</title>
-    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <title>מערכת מחולל מבחני בגרות</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <div class="editor-layout">
-        <main class="main-content">
-            <div class="design-toolbar">
-                <select id="fontFamilySelector" onchange="UI.updateDesign()">
-                    <option value="'Rubik', sans-serif">Rubik (ברירת מחדל)</option>
-                    <option value="Arial, sans-serif">Arial</option>
-                    <option value="'Times New Roman', serif">Times New Roman</option>
-                    <option value="'Courier New', monospace">Courier New</option>
-                </select>
-                <select id="fontSizeSelector" onchange="UI.updateDesign()">
-                    <option value="16px">גודל רגיל (16px)</option>
-                    <option value="18px">גודל בינוני (18px)</option>
-                    <option value="20px">גודל גדול (20px)</option>
-                </select>
-                <button onclick="UI.addPart()" class="tool-btn"><i class="fas fa-layer-group"></i> הוסף פרק</button>
-            </div>
+<div class="toast-container" id="toastContainer"></div>
 
-            <div id="editor-container">
+<header class="main-app-header">
+    <div style="position:absolute; right:20px; top:15px;"><a href="index.html" style="color:white; text-decoration:none; font-size:1.2rem;">🏠 בית</a></div>
+    <h1>EXAMBUILDER 4.0</h1>
+</header>
+
+<div class="container">
+    <!-- Right Panel: Global Settings Only -->
+    <div class="col-panel col-right" id="rightPanel">
+        <div class="resizer resizer-right-col" id="dragHandleRight"></div>
+        <div class="scroll-content">
+            <h2>⚙️ הגדרות מבחן</h2>
+            
+            <div class="form-group">
+                <label>פרטי המבחן</label>
+                <input type="text" id="examTitleInput" placeholder="כותרת המבחן" oninput="App.updateExamTitle()" style="margin-bottom: 1vh;">
+                <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+                     <label for="schoolLogoInput" style="margin:0; cursor:pointer;" class="btn-secondary-small">
+                        <i class="fas fa-image"></i> העלאת לוגו
+                     </label>
+                     <input type="file" id="schoolLogoInput" accept="image/*" onchange="App.handleLogoUpload(event)" style="display:none;">
+                     <span id="logoStatus" style="font-size:0.8rem; color:#bdc3c7;">אין לוגו</span>
                 </div>
-            
-            <div style="text-align: center; margin-top: 30px; color: #aaa;">
-                <p>סוף המבחן</p>
-            </div>
-        </main>
-
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h2>⚙️ הגדרות מערכת</h2>
-            </div>
-            
-            <div class="setting-group">
-                <label>שם המבחן:</label>
-                <input type="text" id="examTitle" placeholder="לדוגמה: מבחן בהיסטוריה" oninput="ExamState.examTitle = this.value">
             </div>
 
-            <div class="setting-group">
-                <label>הנחיות כלליות:</label>
-                <textarea id="generalInstructions" placeholder="הנחיות לנבחן..." oninput="ExamState.instructions.general = this.value"></textarea>
-            </div>
+            <details class="editor-category" open>
+                <summary>הגדרות מערכת</summary>
+                <div class="form-group">
+                    <div style="display:flex; gap:1vw; margin-bottom:1vh;">
+                        <div style="flex:1">
+                            <label for="examDurationInput" style="font-size: 0.8rem;">זמן (דקות)</label>
+                            <input type="number" id="examDurationInput" value="90" min="1">
+                        </div>
+                        <div style="flex:1">
+                            <label for="unlockCodeInput" style="font-size: 0.8rem;">קוד מורה</label>
+                            <input type="text" id="unlockCodeInput" value="1234">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>הגשה</label>
+                    <input type="email" id="teacherEmailInput" placeholder="מייל המורה" style="margin-bottom: 5px;">
+                    <input type="text" id="driveFolderInput" placeholder="קישור לתיקיית Drive">
+                </div>
+            </details>
 
-            <div class="setting-group">
-                <label>משך זמן (דקות):</label>
-                <input type="number" id="examDuration" value="90" onchange="ExamState.duration = this.value">
-            </div>
+            <details class="editor-category">
+                <summary>ייבוא פתרון</summary>
+                <div class="form-group">
+                    <input type="file" id="solutionFileInput" accept=".html,.htm" onchange="App.handleSolutionUpload(event)">
+                    <small style="color:#bdc3c7; font-size:0.75rem;">קובץ זה יוצג למורה בלבד בבדיקה.</small>
+                </div>
+            </details>
 
-            <div class="setting-group">
-                <label>שם בית הספר (לוגו URL):</label>
-                <input type="text" id="logoUrl" placeholder="http://..." onchange="ExamState.logoData = this.value">
-            </div>
-
-            <div class="setting-group">
-                <label>דוא"ל מורה (לקבלת העתק):</label>
-                <input type="email" id="teacherEmail" onchange="ExamState.teacherEmail = this.value">
-            </div>
-
-            <div class="setting-group">
-                <label>קישור לסקריפט (Google Apps Script):</label>
-                <input type="text" id="driveLink" placeholder="https://script.google.com/..." onchange="ExamState.driveLink = this.value">
-            </div>
-
-            <div class="setting-group">
-                <label>סיסמת מורה לשחרור נעילה:</label>
-                <input type="text" id="unlockCode" placeholder="ברירת מחדל: 1234" onchange="ExamState.unlockCodeHash = this.value">
-            </div>
-
-            <div class="actions-panel">
-                <button class="action-btn save" onclick="Generator.saveProject()"><i class="fas fa-save"></i> שמור פרויקט</button>
-                <button class="action-btn export" onclick="Generator.generateHTML()"><i class="fas fa-file-export"></i> צור מבחן (HTML)</button>
-                <button class="action-btn word" onclick="Generator.generateDOCX()"><i class="fas fa-file-word"></i> הורד כ-Word</button>
-                <a href="index.html" class="back-link">חזרה למסך הבית</a>
-            </div>
-        </aside>
-    </div>
-
-    <div id="mediaModal" class="modal">
-        <div class="modal-content">
-            <h3>הוספת מדיה לשאלה</h3>
-            <label>סוג מדיה:</label>
-            <select id="mediaType">
-                <option value="image">תמונה</option>
-                <option value="video">וידאו (YouTube)</option>
-            </select>
-            <label>קישור (URL):</label>
-            <input type="text" id="mediaUrl" placeholder="הדבק כאן את הקישור...">
-            <div class="modal-actions">
-                <button onclick="UI.closeModal()" class="cancel-btn">ביטול</button>
-                <button onclick="UI.saveMedia()" class="confirm-btn">שמור</button>
+            <div class="stats-box">
+                <h3>סיכום ניקוד</h3>
+                <div id="statsContainer"></div>
+                <div class="stat-row total-row"><span>סה"כ:</span> <span id="totalPoints">0</span></div>
             </div>
         </div>
     </div>
 
-    <script src="js/utils.js"></script>
-    <script src="js/state.js"></script>
-    <script src="js/generator.js"></script>
-    <script src="js/generator-html.js"></script>
-    <script src="js/generator-docx.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/main.js"></script>
+    <!-- Middle Panel: The Main Editor Canvas -->
+    <div class="col-middle">
+        
+        <!-- Sticky Editor Toolbar -->
+        <div class="sticky-toolbar">
+            <span class="toolbar-label">עיצוב:</span>
+            <button onmousedown="event.preventDefault(); App.applyFormat('b')" title="מודגש (B)"><i class="fas fa-bold"></i></button>
+            <button onmousedown="event.preventDefault(); App.applyFormat('u')" title="קו תחתון (U)"><i class="fas fa-underline"></i></button>
+            <button onmousedown="event.preventDefault(); App.applyFormat('i')" title="נטוי (I)"><i class="fas fa-italic"></i></button>
+            <div class="separator"></div>
+            <button onmousedown="event.preventDefault(); App.addNewQuestionToCurrentPart()" title="הוסף שאלה חדשה" style="background:#e8f6f3; border-color:#1abc9c; color:#16a085; font-weight:bold;">
+                <i class="fas fa-plus-circle"></i> שאלה חדשה
+            </button>
+        </div>
+
+        <div id="questionsList">
+            <!-- Header Area -->
+            <div id="previewHeader">
+                <img id="previewLogo" src="" alt="School Logo" style="display:none;">
+                <h1 id="previewExamTitle" style="cursor: text;" title="לחץ לעריכה בסרגל הימני">מבחן בגרות</h1>
+                <input type="text" id="studentNameInput" placeholder="שם התלמיד (יופיע כאן)" disabled style="opacity:0.6; cursor: not-allowed;">
+            </div>
+
+            <!-- General Instructions Editor -->
+            <div class="editor-section">
+                <label class="section-label">הנחיות כלליות למבחן:</label>
+                <textarea id="examInstructions" class="editable-textarea instructions-editor" placeholder="רשום כאן הנחיות כלליות למבחן (למשל: חומר עזר מותר, משך הבחינה...)" oninput="App.updateGeneralInstructions(this.value)"></textarea>
+            </div>
+
+            <!-- Tabs / Parts Manager -->
+            <div class="parts-manager">
+                <div class="tabs" id="previewTabs"></div>
+                <button class="btn-icon-add" onclick="App.addPart()" title="הוסף פרק חדש"><i class="fas fa-plus"></i></button>
+            </div>
+
+            <!-- Current Part Content -->
+            <div id="currentPartEditor">
+                <!-- Part Header Editor -->
+                <div class="part-header-editor">
+                    <input type="text" id="partNameEditor" class="part-name-input" placeholder="שם הפרק (למשל: פרק ראשון)" oninput="App.updatePartNameInternal(this.value)">
+                    <div style="flex-grow:1"></div>
+                    <button class="btn-delete-part" onclick="App.removePart()" title="מחק פרק זה"><i class="fas fa-trash"></i> מחק פרק</button>
+                </div>
+
+                <textarea id="previewPartInstructions" class="editable-textarea part-instructions-editor" placeholder="הנחיות לפרק זה (למשל: ענה על 2 מתוך 3 השאלות)..." oninput="App.updatePartInstructionsFromPreview(this.value)"></textarea>
+
+                <!-- Questions List (Dynamic) -->
+                <div id="previewQuestionsContainer" class="questions-stream"></div>
+
+                <!-- Add Question Button -->
+                <div class="add-question-area">
+                    <button class="btn-add-big" onclick="App.addNewQuestionToCurrentPart()">
+                        <i class="fas fa-plus-circle"></i> הוסף שאלה חדשה
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Left Panel: Actions -->
+    <div class="col-panel col-left" id="leftPanel">
+        <div class="resizer resizer-left-col" id="dragHandleLeft"></div>
+        <div class="scroll-content">
+            <div style="margin-top: 5vh; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 3vh; margin-bottom: 3vh;">
+                <h3>💾 שמירה וטעינה</h3>
+                <button class="btn-download" style="background: #2c3e50; border: 1px solid #34495e; margin-bottom: 10px;" onclick="App.saveProject()">שמור טיוטה (JSON)</button>
+                <button class="btn-download" style="background: #2c3e50; border: 1px solid #34495e;" onclick="document.getElementById('projectFileInput').click()">טען טיוטה מקובץ</button>
+                <input type="file" id="projectFileInput" accept=".json, .html" style="display: none;" onchange="App.handleProjectLoad(event)">
+            </div>
+            <div style="text-align: center;">
+                <h2>📤 סיום והפצה</h2>
+                <div class="file-info">שם הקובץ שיירד:<br><strong id="filenamePreview" style="color: var(--accent); font-size:1.1rem;">מבחן - תלמיד.html</strong></div>
+                <!-- Preview Button Added Here -->
+                <button class="btn-download" style="background: #8e44ad; margin-bottom: 15px; border:1px solid #7d3c98;" onclick="Generator.previewExam()">
+                    <i class="fas fa-eye"></i> תצוגה מקדימה (תלמיד)
+                </button>
+                <button class="btn-download" onclick="Generator.generateAndDownload()">הורד מבחן (HTML)</button>
+                <button class="btn-download" style="background: #2980b9; margin-top: 15px;" onclick="Generator.generateAndDownloadDocx()">הורד כ-DOCX (לפתרון)</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="main-footer">
+    EXAMBUILDER 4.0 &copy; 2026
+</footer>
+
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/generator-html.js"></script>
+<script src="js/generator-docx.js"></script>
+<script src="js/generator.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
