@@ -1,3 +1,5 @@
+// קובץ: exbuild4-main/js/state.js
+
 const ExamState = {
     questions: [],
     parts: [
@@ -17,18 +19,39 @@ const ExamState = {
     partNamesList: ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שביעי", "שמיני", "תשיעי", "עשירי"],
     subLabels: ["א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י"],
     tempSubQuestions: [],
-    addQuestion: function(q) { this.questions.push(q); },
-    removeQuestion: function(id) { this.questions = this.questions.filter(q => q.id !== id); },
-    addPart: function(part) { this.parts.push(part); },
+
+    addQuestion: function(q) { 
+        this.questions.push(q); 
+    },
+
+    // --- התיקון: פונקציה לעדכון שאלה קיימת ---
+    updateQuestion: function(id, updatedQ) {
+        const index = this.questions.findIndex(q => q.id === id);
+        if (index !== -1) {
+            this.questions[index] = updatedQ;
+        }
+    },
+    // ------------------------------------------
+
+    removeQuestion: function(id) { 
+        this.questions = this.questions.filter(q => q.id !== id); 
+    },
+
+    addPart: function(part) { 
+        this.parts.push(part); 
+    },
+
     removePart: function(id) {
         this.questions = this.questions.filter(q => q.part !== id);
         this.parts = this.parts.filter(p => p.id !== id);
-        if (this.instructions.parts) delete this.instructions.parts[id];
+        delete this.instructions.parts[id];
     },
+
     updatePartName: function(id, name) {
         const p = this.parts.find(p => p.id === id);
         if (p) p.name = name;
     },
+
     getNextPartId: function() {
         const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         for (let i=0; i<letters.length; i++) {
