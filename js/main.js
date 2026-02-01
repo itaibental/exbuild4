@@ -74,7 +74,7 @@ const App = {
                 ExamState.examTitle = loaded.state.examTitle || 'מבחן בגרות';
                 ExamState.logoData = loaded.state.logoData;
                 ExamState.solutionDataUrl = loaded.state.solutionDataUrl;
-                ExamState.instructions = loaded.state.instructions;
+                ExamState.instructions = loaded.state.instructions || { general: '', parts: {} };
                 if (loaded.meta) {
                     if (UI.elements.examDurationInput) UI.elements.examDurationInput.value = loaded.meta.duration || 90;
                     if (UI.elements.unlockCodeInput) UI.elements.unlockCodeInput.value = loaded.meta.unlockCode || '';
@@ -135,6 +135,7 @@ const App = {
     },
     setupTextFormatting: function() {
         const tooltip = document.getElementById('textFormatTooltip');
+        if (!tooltip) return;
         document.addEventListener('mousedown', (e) => {
             if (e.target.closest('#textFormatTooltip')) return; 
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -177,7 +178,7 @@ const App = {
         if (part) {
             UI.elements.partNameInput.value = part.name;
             UI.elements.partNameLabel.textContent = part.name;
-            const instructions = ExamState.instructions.parts[selectedPartId] || '';
+            const instructions = (ExamState.instructions.parts && ExamState.instructions.parts[selectedPartId]) || '';
             UI.elements.partInstructions.value = instructions;
             this.setTab(selectedPartId);
         }
@@ -185,10 +186,10 @@ const App = {
     setTab: function(partId) {
         ExamState.currentTab = partId;
         UI.renderTabs();
-        const instructions = ExamState.instructions.parts[partId] || '';
+        const instructions = (ExamState.instructions.parts && ExamState.instructions.parts[partId]) || '';
         if(UI.elements.partInstructions) UI.elements.partInstructions.value = instructions;
         UI.updatePartInstructionsInput(instructions);
-        if(UI.elements.qPart.value !== partId) {
+        if(UI.elements.qPart && UI.elements.qPart.value !== partId) {
             UI.elements.qPart.value = partId;
             const part = ExamState.parts.find(p => p.id === partId);
             if(part) {
@@ -219,7 +220,8 @@ const App = {
             return;
         }
         const partIdToRemove = UI.elements.qPart.value;
-        const partName = ExamState.parts.find(p => p.id === partIdToRemove).name;
+        const part = ExamState.parts.find(p => p.id === partIdToRemove);
+        const partName = part ? part.name : partIdToRemove;
         UI.showConfirm('מחיקת חלק', `האם למחוק את "${partName}"? השאלות בחלק זה יימחקו.`, () => {
             ExamState.removePart(partIdToRemove);
             if (ExamState.parts.length > 0) ExamState.currentTab = ExamState.parts[0].id;
@@ -240,10 +242,12 @@ const App = {
     },
     savePartInstructions: function() {
         const val = UI.elements.partInstructions.value;
+        if (!ExamState.instructions.parts) ExamState.instructions.parts = {};
         ExamState.instructions.parts[UI.elements.qPart.value] = val;
         UI.updatePartInstructionsInput(val);
     },
     updatePartInstructionsFromPreview: function(value) {
+        if (!ExamState.instructions.parts) ExamState.instructions.parts = {};
         ExamState.instructions.parts[ExamState.currentTab] = value;
         if(UI.elements.partInstructions) UI.elements.partInstructions.value = value;
     },
@@ -313,7 +317,7 @@ const App = {
     },
     updateExamTitle: function() {
         ExamState.examTitle = UI.elements.examTitleInput.value.trim() || 'מבחן בגרות';
-        UI.elements.previewExamTitle.textContent = ExamState.examTitle;
+        if (UI.elements.previewExamTitle) UI.elements.previewExamTitle.textContent = ExamState.examTitle;
     },
     updateInstructionsPreview: function() {
         const text = UI.elements.examInstructions.value;
@@ -328,7 +332,7 @@ const App = {
     updateFilenamePreview: function() {
         ExamState.studentName = UI.elements.studentNameInput.value.trim();
         const name = ExamState.studentName || 'תלמיד';
-        UI.elements.filenamePreview.textContent = `${name} - מבחן.html`;
+        if (UI.elements.filenamePreview) UI.elements.filenamePreview.textContent = `${name} - מבחן.html`;
     },
     handleLogoUpload: function(event) {
         const file = event.target.files[0];
@@ -336,8 +340,10 @@ const App = {
             const reader = new FileReader();
             reader.onload = function(e) {
                 ExamState.logoData = e.target.result;
-                UI.elements.previewLogo.src = ExamState.logoData;
-                UI.elements.previewLogo.style.display = 'block';
+                if (UI.elements.previewLogo) {
+                    UI.elements.previewLogo.src = ExamState.logoData;
+                    UI.elements.previewLogo.style.display = 'block';
+                }
             };
             reader.readAsDataURL(file);
         }
